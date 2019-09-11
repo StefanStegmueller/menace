@@ -6,8 +6,11 @@ verify_ssl = true
 [dev-packages]
 pylint = "*"
 autopep8 = "*"
+rope = "*"
 
 [packages]
+numpy = "*"
+tqdm = "*"
 
 [requires]
 python_version = "3.6"
