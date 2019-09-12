@@ -13,6 +13,12 @@ class Model:
         self.__load_model()
 
     def pick_move(self, board_state):
+        """
+        Determines the move next move of the model given the board state.
+        The next move is taken from a discrete probability distribution.
+        The probability distribution for a state changes after a game on the basis
+        of the outcome.
+        """
         probs_normalized = self.__normalize(
             self.__get_probabilities(board_state))
         choices = list(range(0, 9))

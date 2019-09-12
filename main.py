@@ -1,48 +1,9 @@
 import sys
 import random
 from tqdm import tqdm
+from src.user_interface import UserInterface
 from src.board_state import Field, Result, BoardState
 from src.model import Model
-
-
-def coords_to_index(x: int, y: int) -> int:
-    return ((x - 1) * 3 + y) - 1
-
-
-def ask_next_move(state: BoardState) -> (bool, int):
-    input_text = input("Next move (xy):")
-    error_text = "Wrong Input."
-    if len(input_text) != 2:
-        print(error_text)
-        return (False, 0)
-    try:
-        x = int(input_text[0])
-        y = int(input_text[1])
-    except:
-        print(error_text)
-        return (False, 0)
-    if x < 1 or x > 3 or y < 1 or y > 3:
-        print(error_text)
-        return (False, 0)
-    index = coords_to_index(x, y)
-    if state.get_field(index) != Field.NONE:
-        print(error_text)
-        return (False, 0)
-    return (True, index)
-
-
-def ask_continue_trainig(train: bool, train_steps: int, ai_wins: int) -> (bool, int):
-    if train:
-        if train_steps >= 10000:
-            print("AI win rate: {}%".format(int(ai_wins / (train_steps / 100))))
-            input_text = input("Continue training?(y/n):")
-            if input_text == "y":
-                return (True, 0)
-            else:
-                return (False, 0)
-        else:
-            return (True, train_steps)
-    return (False, train_steps)
 
 
 def evalute_game(state: BoardState, model: Model, progress: [(BoardState, int)], train: int) -> (bool, BoardState, Result):
@@ -60,11 +21,13 @@ def evalute_game(state: BoardState, model: Model, progress: [(BoardState, int)],
 
 def main():
     train = False
-    if sys.argv[1] == "train":
-        train = True
+    # if sys.argv[1] == "train":
+    #     train = True
 
     current_state = BoardState()
     model = Model()
+    ui = UserInterface()
+
     ai_progress = []
     ai_wins = 0
 
@@ -88,7 +51,7 @@ def main():
             train_steps += 1
             pbar.update(1)
         else:
-            res = ask_next_move(current_state)
+            res = ui.ask_next_move(current_state)
             if res[0] is False:
                 continue
             index = res[1]
@@ -98,7 +61,7 @@ def main():
             current_state, model, ai_progress, train)
         if game_over:
             ai_progress = []
-            (train, train_steps) = ask_continue_trainig(
+            (train, train_steps) = ui.ask_continue_trainig(
                 train, train_steps, ai_wins)
             continue
 
@@ -113,7 +76,7 @@ def main():
             if winner == Result.O_WINS:
                 ai_wins += 1
             ai_progress = []
-            (train, train_steps) = ask_continue_trainig(
+            (train, train_steps) = ui.ask_continue_trainig(
                 train, train_steps, ai_wins)
 
 
