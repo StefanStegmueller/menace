@@ -10,17 +10,27 @@ from src.model import Model
 def evalute_game(state: BoardState,
                  model: Model,
                  progress: [(BoardState, int)],
-                 train_args: TrainArgs) -> (bool, BoardState, Result):
+                 train_args: TrainArgs) -> (bool, BoardState):
     winner = state.check_winner()
 
     if winner == Result.NONE:
-        return (False, state, winner)
+        return (False, state)
+
+    if winner == Result.O_WINS:
+        train_args.ai_wins += 1
+    elif winner == Result.X_WINS:
+        train_args.trainer_wins += 1
+    else:
+        train_args.draws += 1
 
     if not(train_args.train):
         ui.print_game_over(state, winner)
+    else:
+        train_args.train_steps += 1
+        train_args.pbar.update(1)
 
     model.reward(progress, winner)
-    return (True, BoardState(), winner)
+    return (True, BoardState())
 
 
 def main():
@@ -37,19 +47,14 @@ def main():
         ui.print_state(current_state, train_args)
 
         if train_args.train:
-            if train_args.train_steps == 0:
-                train_args.pbar.reset()
-
             indices = [i for i in range(
                 len(current_state.board)) if current_state.board[i] == Field.NONE]
             index = random.choice(indices)
-            train_args.train_steps += 1
-            train_args.pbar.update(1)
         else:
             index = ui.ask_next_move(current_state)
 
         current_state = current_state.set_field(index, Field.X)
-        (game_over, current_state, _) = evalute_game(
+        (game_over, current_state) = evalute_game(
             current_state, model, ai_progress, train_args)
         if game_over:
             ai_progress = []
@@ -61,11 +66,9 @@ def main():
         ai_progress.append((current_state, ai_move))
 
         current_state = current_state.set_field(ai_move, Field.O)
-        (game_over, current_state, winner) = evalute_game(
+        (game_over, current_state) = evalute_game(
             current_state, model, ai_progress, train_args)
         if game_over:
-            if winner == Result.O_WINS:
-                train_args.ai_wins += 1
             ai_progress = []
             train_args = ui.ask_continue_trainig(train_args)
 

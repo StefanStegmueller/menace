@@ -13,3 +13,5 @@ class TrainArgs:
         self.max_train_steps = max_train_steps
         self.pbar = pbar
         self.ai_wins = 0
+        self.trainer_wins = 0
+        self.draws = 0

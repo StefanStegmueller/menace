@@ -74,7 +74,7 @@ class BoardState:
 
     def coords_to_index(self, x: int, y: int) -> int:
         """Returns the board list index for given coordinates"""
-        return ((x - 1) * 3 + y) - 1
+        return (x - 3 * y + 8)
 
     def __divide_chunks(self, l, n):
         """Divides a list into n sublists."""
@@ -84,13 +84,13 @@ class BoardState:
     def __repr__(self):
         board_formated = [" " if e == Field(0).name else e for e in [
             Field(i).name for i in self.board]]
-        s = "     1   2   3    x\n" \
-            "   +---+---+---+\n" \
-            " 1 | {} | {} | {} |\n" \
-            "   +---+---+---+\n" \
-            " 2 | {} | {} | {} |\n" \
+        s = " y\n" \
             "   +---+---+---+\n" \
             " 3 | {} | {} | {} |\n" \
             "   +---+---+---+\n" \
-            " y".format(*board_formated)
+            " 2 | {} | {} | {} |\n" \
+            "   +---+---+---+\n" \
+            " 1 | {} | {} | {} |\n" \
+            "   +---+---+---+\n" \
+            "     1   2   3    x\n".format(*board_formated)
         return s

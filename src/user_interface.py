@@ -1,6 +1,10 @@
 import sys
 from tqdm import tqdm
 from pyfiglet import Figlet
+from ascii_graph import Pyasciigraph
+from ascii_graph.colors import *
+from ascii_graph.colordata import vcolor
+from ascii_graph.colordata import hcolor
 from src.board_state import BoardState, Field, Result
 from src.train_args import TrainArgs
 
@@ -23,7 +27,7 @@ def get_train_args() -> TrainArgs:
         input_text = sys.argv[1]
         if __check_int(input_text):
             max_train_steps = int(input_text)
-            pbar = tqdm(range(0, max_train_steps))
+            pbar = tqdm(range(0, max_train_steps), leave=True)
             train_args = TrainArgs(True, 0, max_train_steps, pbar)
             return train_args
         else:
@@ -41,7 +45,10 @@ def ask_next_move(state: BoardState) -> int:
     Returns tuple (success: bool, index_next_move: int).
     """
 
-    input_text = input(">>> Next move (xy):")
+    input_text = input(">>> Next move (xy|q=quit):")
+
+    if input_text == "q" or input_text == "Q":
+        sys.exit()
 
     if (not(__check_length(2, input_text))
         or not(__check_int(input_text[0]))
@@ -65,18 +72,35 @@ def ask_next_move(state: BoardState) -> int:
 def ask_continue_trainig(train_args: TrainArgs) -> (bool, TrainArgs):
     if train_args.train:
         if train_args.train_steps >= train_args.max_train_steps:
+            train_args.pbar.close()
+
             def ask_continue() -> bool:
-                input_text = input("Continue training?(y/n):")
-                if (not(__check_length(1, input_text))
-                        or not(__check_yes_no(input_text))):
-                    return (True if input_text == "y" or input_text == "Y" else False)
-                else:
+                input_text = input("Continue training?(y|n|q=quit):")
+                if input_text == "q" or input_text == "Q":
+                    sys.exit()
+                if not __check_length(1, input_text) or not __check_yes_no(input_text):
                     return ask_continue()
 
-            print("AI win rate: {}%".format(
-                int(train_args.ai_wins / (train_args.train_steps / 100))))
+                return (True if input_text == "y" or input_text == "Y" else False)
+
+            results = [("AI", int(train_args.ai_wins)),
+                       ("Trainer", int(train_args.trainer_wins)),
+                       ("Draw", int(train_args.draws))]
+            color_pattern = [Red, Gre, Blu]
+            data = vcolor(results, color_pattern)
+
+            graph = Pyasciigraph(force_max_value=train_args.max_train_steps)
+            for line in graph.graph('Wins:', data):
+                print(line)
+
             train_args.ai_wins = 0
+            train_args.draws = 0
+            train_args.trainer_wins = 0
+            train_args.train_steps = 0
             train_args.train = ask_continue()
+            if train_args.train:
+                train_args.pbar = tqdm(
+                    range(0, train_args.max_train_steps), leave=True)
 
     return train_args
 
@@ -100,7 +124,7 @@ def print_game_over(state: BoardState, winner: Result):
 def __check_length(n: int, input_text: str) -> bool:
     """Check if input is not longer than 2 characters."""
     if len(input_text) != n:
-        print(__standard_error_text + "Input length has to be 2.\n")
+        print(__standard_error_text + "Input length has to be {}.\n".format(n))
         return False
     return True
 
@@ -142,5 +166,14 @@ def __check_yes_no(input_text: str) -> bool:
     txt = input_text
     if txt != "y" and txt != "n" and txt != "Y" and txt != "N":
         print(__standard_error_text + "Please type \"y\" or \"n\".\n")
+        return False
+    return True
+
+
+def __check_quit(input_text: str) -> bool:
+    """Check if input is quit."""
+    txt = input_text
+    if txt != "q" and txt != "Q":
+        print(__standard_error_text)
         return False
     return True
