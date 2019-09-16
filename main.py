@@ -41,6 +41,7 @@ def main():
     model = Model()
 
     ai_progress = []
+    ai_moves = 1
 
     while True:
 
@@ -58,18 +59,21 @@ def main():
             current_state, model, ai_progress, train_args)
         if game_over:
             ai_progress = []
+            ai_moves = 0
             train_args = ui.ask_continue_trainig(train_args)
             continue
 
         # Pick ai move from discrete random distribution
-        ai_move = model.pick_move(current_state)
+        ai_move = model.pick_move(current_state, ai_moves)
         ai_progress.append((current_state, ai_move))
+        ai_moves += 1
 
         current_state = current_state.set_field(ai_move, Field.O)
         (game_over, current_state) = evalute_game(
             current_state, model, ai_progress, train_args)
         if game_over:
             ai_progress = []
+            ai_moves = 0
             train_args = ui.ask_continue_trainig(train_args)
 
 
