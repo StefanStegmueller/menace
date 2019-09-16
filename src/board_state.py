@@ -63,8 +63,9 @@ class BoardState:
                 return Result(line[0])
         return Result.NONE
 
-    def rotate(self, board: list) -> list:
-        """Rotates given board list clockwise for 90 degrees."""
+    def rotate(self, org_board: list, clockwise=True) -> list:
+        """Rotates given board list for 90 degrees."""
+        board = org_board.copy()
         rows = list(self.__divide_chunks(board, 3))
         columns = [[r[i] for r in rows]for i in range(0, 3)]
         columns_reversed = [c.reverse() for c in columns]

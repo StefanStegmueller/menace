@@ -1,68 +1,59 @@
-import sys
+
 import random
 from tqdm import tqdm
-from src.user_interface import UserInterface
+import src.user_interface as ui
+from src.train_args import TrainArgs
 from src.board_state import Field, Result, BoardState
 from src.model import Model
 
 
-def evalute_game(state: BoardState, model: Model, progress: [(BoardState, int)], train: int) -> (bool, BoardState, Result):
+def evalute_game(state: BoardState,
+                 model: Model,
+                 progress: [(BoardState, int)],
+                 train_args: TrainArgs) -> (bool, BoardState, Result):
     winner = state.check_winner()
 
     if winner == Result.NONE:
         return (False, state, winner)
 
-    if not(train):
-        print(state)
-        print("\n+++ GAME OVER +++\n")
+    if not(train_args.train):
+        ui.print_game_over(state, winner)
+
     model.reward(progress, winner)
     return (True, BoardState(), winner)
 
 
 def main():
-    train = False
-    # if sys.argv[1] == "train":
-    #     train = True
+    ui.print_startup()
+    train_args = ui.get_train_args()
 
     current_state = BoardState()
     model = Model()
-    ui = UserInterface()
 
     ai_progress = []
-    ai_wins = 0
-
-    train_steps = 0
-    pbar = tqdm(range(0, 10000))
 
     while True:
 
-        # Display current state
-        if not(train):
-            print(current_state)
+        ui.print_state(current_state, train_args)
 
-        # Ask player for next move or train
-        if train:
-            if train_steps == 0:
-                pbar.reset()
+        if train_args.train:
+            if train_args.train_steps == 0:
+                train_args.pbar.reset()
 
             indices = [i for i in range(
                 len(current_state.board)) if current_state.board[i] == Field.NONE]
             index = random.choice(indices)
-            train_steps += 1
-            pbar.update(1)
+            train_args.train_steps += 1
+            train_args.pbar.update(1)
         else:
-            res = ui.ask_next_move(current_state)
-            if res[0] is False:
-                continue
-            index = res[1]
+            index = ui.ask_next_move(current_state)
 
         current_state = current_state.set_field(index, Field.X)
         (game_over, current_state, _) = evalute_game(
-            current_state, model, ai_progress, train)
+            current_state, model, ai_progress, train_args)
         if game_over:
             ai_progress = []
-            (train, train_steps) = ui.ask_continue_trainig(
-                train, train_steps, ai_wins)
+            train_args = ui.ask_continue_trainig(train_args)
             continue
 
         # Pick ai move from discrete random distribution
@@ -71,13 +62,12 @@ def main():
 
         current_state = current_state.set_field(ai_move, Field.O)
         (game_over, current_state, winner) = evalute_game(
-            current_state, model, ai_progress, train)
+            current_state, model, ai_progress, train_args)
         if game_over:
             if winner == Result.O_WINS:
-                ai_wins += 1
+                train_args.ai_wins += 1
             ai_progress = []
-            (train, train_steps) = ui.ask_continue_trainig(
-                train, train_steps, ai_wins)
+            train_args = ui.ask_continue_trainig(train_args)
 
 
 if __name__ == "__main__":

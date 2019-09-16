@@ -11,6 +11,7 @@ rope = "*"
 [packages]
 numpy = "*"
 tqdm = "*"
+pyfiglet = "*"
 
 [requires]
 python_version = "3.6"
