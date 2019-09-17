@@ -2,7 +2,7 @@ import sys
 from tqdm import tqdm
 from pyfiglet import Figlet
 from ascii_graph import Pyasciigraph
-from ascii_graph.colors import *
+from ascii_graph.colors import Red, Gre, Blu
 from ascii_graph.colordata import vcolor
 from ascii_graph.colordata import hcolor
 from src.board_state import BoardState, Field, Result

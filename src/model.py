@@ -13,9 +13,10 @@ class Operation(IntEnum):
 
 
 class Model:
-    def __init__(self):
+    def __init__(self, load_model=True):
         self.states = defaultdict(set)
-        self.__load_model()
+        if load_model:
+            self.__load_model()
 
     def pick_move(self, board_state: BoardState, n: int) -> int:
         """
@@ -46,7 +47,8 @@ class Model:
             if key == "":
                 key = board_state.to_string()
 
-            probs = self.__transform(operations, probs, rev=False)
+            probs = self.__transform(
+                operations, probs, rev=False, clockwise=True)
             self.states[key] = probs
 
         self.__safe_model()
@@ -74,25 +76,27 @@ class Model:
             if key in self.states:
                 return (key,
                         self.__transform(
-                            operations, self.states[key], rev=True),
+                            operations, self.states[key], rev=True, clockwise=False),
                         operations)
             elif d == max_depth:
                 return ("", [], [])
             else:
-                operations.append(o)
                 if o == Operation.Flip:
                     transformed = self.__flip_vertically(b)
+                    operations.append(o)
                     o = Operation.Rot
                 elif o == Operation.Rot:
                     transformed = self.__flip_vertically(b)
+                    del operations[-1]
                     transformed = self.__rotate(transformed, clockwise=True)
+                    operations.append(o)
                     o = Operation.Flip
                 d += 1
                 return search(transformed, d, o)
 
         return search(board, depth, Operation.Flip)
 
-    def __transform(self, operations: list, probs: list, rev=False) -> list:
+    def __transform(self, operations: list, probs: list, rev=False, clockwise=False) -> list:
         transformed_probs = probs
         if rev:
             transformations = reversed(operations)
@@ -102,7 +106,7 @@ class Model:
         for op in transformations:
             if op == Operation.Rot:
                 transformed_probs = self.__rotate(
-                    transformed_probs, clockwise=False)
+                    transformed_probs, clockwise=clockwise)
             elif op == Operation.Flip:
                 transformed_probs = self.__flip_vertically(transformed_probs)
         return transformed_probs

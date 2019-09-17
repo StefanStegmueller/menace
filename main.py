@@ -38,7 +38,7 @@ def main():
     train_args = ui.get_train_args()
 
     current_state = BoardState()
-    model = Model()
+    model = Model(load_model=True)
 
     ai_progress = []
     ai_moves = 1
