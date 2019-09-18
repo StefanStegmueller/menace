@@ -59,7 +59,7 @@ def main():
             current_state, model, ai_progress, train_args)
         if game_over:
             ai_progress = []
-            ai_moves = 0
+            ai_moves = 1
             train_args = ui.ask_continue_trainig(train_args)
             continue
 

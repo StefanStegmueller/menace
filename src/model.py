@@ -25,7 +25,7 @@ class Model:
         The probability distribution for a state changes after a game on the basis
         of the outcome.
         """
-        (_, probs, _) = self.__get_probabilities(board_state, n)
+        probs = self.__get_probabilities(board_state, n)
         probs_normalized = self.__normalize(probs)
         choices = list(range(0, 9))
         choice = np.random.choice(choices, 1, p=probs_normalized)[0].item()
@@ -35,33 +35,29 @@ class Model:
         for step in progress:
             board_state = step[0]
             move = step[1]
-            (key, probs, operations) = self.__get_probabilities(board_state, 0)
+            probs = self.__get_probabilities(board_state, 0)
             if winner is Result.DRAW:
                 probs[move] += 1.0
             elif winner is Result.O_WINS:
                 probs[move] += 3.0
             else:
-                if sum(probs) >= 0.0 and probs[move] > 0:
+                if probs[move] > 0:
                     probs[move] -= 1.0
 
-            if key == "":
-                key = board_state.to_string()
-
-            probs = self.__transform(
-                operations, probs, rev=False, clockwise=True)
+            key = board_state.to_string()
             self.states[key] = probs
 
         self.__safe_model()
 
-    def __get_probabilities(self, board_state: BoardState, n) -> (str, list):
-        (key, probs, operations) = self.__rot_invariant_search(board_state.board)
-        if key == "":
+    def __get_probabilities(self, board_state: BoardState, n: int) -> list:
+        (success, probs) = self.__rot_invariant_search(board_state.board)
+        if not success:
             initial_probs = self.__initial_probabilities(board_state, n)
             self.states[board_state.to_string()] = initial_probs
-            return (key, initial_probs, [])
-        return (key, probs, operations)
+            return initial_probs
+        return probs
 
-    def __rot_invariant_search(self, board: list) -> (str, list, list):
+    def __rot_invariant_search(self, board: list) -> (bool, list):
         """
         Searches for entries invariant of rotation.
         Returns probabilities with rotation of given board state
@@ -71,15 +67,21 @@ class Model:
         max_depth = 8
         depth = 1
 
-        def search(b: list, d: int, o: Operation) -> list:
+        def search(b: list, d: int, o: Operation) -> (bool, list):
             key = BoardState.from_board(b).to_string()
             if key in self.states:
-                return (key,
-                        self.__transform(
-                            operations, self.states[key], rev=True, clockwise=False),
-                        operations)
+                probs = self.__reverse_transform(operations, self.states[key])
+
+                # Remove found key
+                del self.states[key]
+
+                # Save transformed probabilites with searched key
+                searched_key = BoardState.from_board(board).to_string()
+                self.states[searched_key] = probs
+
+                return (True, probs)
             elif d == max_depth:
-                return ("", [], [])
+                return (False, [])
             else:
                 if o == Operation.Flip:
                     transformed = self.__flip_vertically(b)
@@ -96,17 +98,12 @@ class Model:
 
         return search(board, depth, Operation.Flip)
 
-    def __transform(self, operations: list, probs: list, rev=False, clockwise=False) -> list:
+    def __reverse_transform(self, operations: list, probs: list) -> list:
         transformed_probs = probs
-        if rev:
-            transformations = reversed(operations)
-        else:
-            transformations = operations
-
-        for op in transformations:
+        for op in reversed(operations):
             if op == Operation.Rot:
                 transformed_probs = self.__rotate(
-                    transformed_probs, clockwise=clockwise)
+                    transformed_probs, clockwise=False)
             elif op == Operation.Flip:
                 transformed_probs = self.__flip_vertically(transformed_probs)
         return transformed_probs
@@ -140,14 +137,16 @@ class Model:
             with open(path, "r") as file:
                 self.states = json.load(file)
 
-    def __model_resource_path(self):
+    def __model_resource_path(self) -> str:
         dir = os.path.split(os.path.abspath(os.path.realpath(sys.argv[0])))[0]
         return os.path.join(dir, 'model.json')
 
-    def __initial_probabilities(self, board_state: BoardState, n):
-        return [5 - n if i == Field.NONE else 0 for i in board_state.board]
+    def __initial_probabilities(self, board_state: BoardState, n: int) -> list:
+        return [5 - n if i == Field.NONE else -1 for i in board_state.board]
 
-    def __normalize(self, probs):
-        if sum(probs) == 0:
-            probs = [1 for i in probs]
+    def __normalize(self, probs: list) -> list:
+        if all(p == -1 or p == 0 for p in probs):
+            probs = [1 if i == 0 else 0 for i in probs]
+        else:
+            probs = [0 if i == -1 else i for i in probs]
         return list(map(lambda x: x / sum(probs), probs))

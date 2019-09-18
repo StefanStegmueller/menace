@@ -41,10 +41,16 @@ class ModelTest(unittest.TestCase):
             "000210100",
             "020112001"
         ]
+
+        model_probs = [
+            "112111011",
+            "211001011",
+            "101000120"
+        ]
         model = Model(load_model=False)
 
-        for k in model_keys:
-            model.states[k] = self.mock_state_probs(k)
+        for i, k in enumerate(model_keys):
+            model.states[k] = self.to_int_list(model_probs[i])
 
         ai_keys = [
             "001000000",
@@ -60,14 +66,17 @@ class ModelTest(unittest.TestCase):
         model.reward(progress, Result.X_WINS)
 
         target_probs = [
-            "110110111",
-            "110100101",
-            "100000101"
+            "110110211",
+            "110100102",
+            "110000101"
         ]
         target_probs = [list(map(float, self.to_int_list(p)))
                         for p in target_probs]
 
-        for i, k in enumerate(model_keys):
+        self.assertEqual(len(model.states), len(model_keys),
+                         "Too much state entries in model.")
+
+        for i, k in enumerate(ai_keys):
             model_probs = model.states[k]
             self.assertEqual(model_probs, target_probs[i])
 
