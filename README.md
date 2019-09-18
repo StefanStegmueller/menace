@@ -1,4 +1,4 @@
-#Menace
+# Menace
 
 This is an implementation of Donald Michies paper "Experiments on the mechanization of game-learning" with command line interface.
 
